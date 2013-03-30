@@ -2,10 +2,14 @@
 $(function() {
 
     var dfd = $.Deferred(),
-        alb_photo;
-    var $thumbs_height  = 90;
-    var images = {},
-        last_loaded_img;
+        alb_photo,
+        images = {},
+        last_loaded_img,
+        $thumbs_height  = 90,
+        $body = $('body'),
+        $small = $('.small'),
+        $prev_arr = $('a.prev'),
+        $next_arr = $('a.next');
 
     dfd.resolve();
 
@@ -29,40 +33,36 @@ $(function() {
                 jQuery.each(data['entries'], function () {
                     if (this['title'] == 'Кошкин дом') return a = this;
                 });
-//                console.log(a);
                 alb_photo = a['links']['photos'];
-
             }, 'jsonp');
 
         })
         .pipe(function () {
             return $.get(alb_photo, {}, function (data) {
-//                console.log(alb_photo);
-//                console.log(data);
-//                console.log(data['entries'].length-1);
-                jQuery.each(data['entries'], function (i) {
+                jQuery.each(data['entries'].slice(0, data['entries'].length-1), function (i) {
                     i++;
                     $(images).data(''+i, { XXS: this['img']['XXS']['href'], L: this['img']['L']['href']});
                 });
+
                 var last_loaded = data['entries'].length-1;
                 last_loaded_img = data['entries'][last_loaded]['updated'];
-                console.log('1 '+getKeysCount($(images).data()));
             }, 'jsonp');
 
         }).pipe(function () {
              jQuery.each($(images).data(), function (i) {
                 var path = this.XXS;
-                $('.small').append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
+                $small.append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
             });
+
             var first_img,img_num;
             if (history.state){
                 first_img = history.state.img;
                 img_num = history.state.img_num;
-//                console.log(history.state);
             }else{
                 first_img = $(images).data('1').L;
                 img_num = 1;
             }
+
             checkLastElem(img_num);
             changeCurrentThumb($('.small img[alt="'+ img_num +'"]'));
             return $('.current_img').html('<img src="'+ first_img +'" alt="'+ img_num +'">');
@@ -70,9 +70,9 @@ $(function() {
 
 
 
-    $('.small').hide();
+    $small.hide();
 
-    $('.small').on('click', 'a', function (event) {
+    $small.on('click', 'a', function (event) {
         event.preventDefault();
         var this_img = $(this).find('img');
         var img_num = $(this_img).attr("alt"),
@@ -87,35 +87,33 @@ $(function() {
         }
     });
 
-    $('a.prev').on('click', function (event) {
+    $prev_arr.on('click', function (event) {
         event.preventDefault();
 
-        var curr_img = $('.current_img').find('img'),
-            curr_num = parseInt($(curr_img).attr("alt"), 10),
-            prev_thumb = $('.small a')[curr_num],
-            prev_num = curr_num + 1 + '';
+        var curr_img = $('.current_img').find('img').attr("alt"),
+            prev_num = parseInt(curr_img, 10) - 1 + '',
+            prev_thumb = $small.find('img[alt="'+prev_num+'"]');
 
-        changeCurrentThumb($(prev_thumb).find('img'));
+        changeCurrentThumb($(prev_thumb));
 
         prevImg(prev_num);
     });
 
 
-    $('a.next').on('click', function (event) {
+    $next_arr.on('click', function (event) {
         event.preventDefault();
 
-        var curr_img = $('.current_img').find('img'),
-            curr_num = parseInt($(curr_img).attr("alt"), 10),
-            next_thumb = $('.small a')[curr_num],
-            next_num = curr_num + 1 + '';
+        var curr_img = $('.current_img').find('img').attr("alt"),
+            next_num = parseInt(curr_img, 10) + 1 + '',
+            next_thumb = $small.find('img[alt="'+next_num+'"]');
 
-        changeCurrentThumb($(next_thumb).find('img'));
+        changeCurrentThumb($(next_thumb));
 
         nextImg(next_num);
     });
 
 
-    $('.small').bind('mousewheel DOMMouseScroll', function(e) {
+    $small.bind('mousewheel DOMMouseScroll', function(e) {
         var scrollTo = null;
         if (e.type == 'mousewheel') {
             scrollTo = e.originalEvent.wheelDelta;
@@ -123,20 +121,20 @@ $(function() {
         else if (e.type == 'DOMMouseScroll') {
             scrollTo = e.originalEvent.detail;
         }
-
+        var $body_width = $body.width();
         if (scrollTo > 0) {
             e.preventDefault();
-            $('.small').animate({
-                left: parseInt($('.small').css('left'), 10) <= ($('body').width() +$('body').width()/2) - $('.small').width() ?
-                    $('body').width() - $('.small').width() :
-                    '-='+$('body').width()/2
+            $small.animate({
+                left: parseInt($small.css('left'), 10) <= ($body_width +$body_width/2) - $small.width() ?
+                    $body_width - $small.width() :
+                    '-='+$body_width/2
             }, {queue:false});
         }else{
             e.preventDefault();
-                $('.small').animate({
-                    left: parseInt($('.small').css('left'), 10) >= -$('body').width()/2 ?
+                $small.animate({
+                    left: parseInt($small.css('left'), 10) >= -$body_width/2 ?
                         0 :
-                        '+='+$('body').width()/2
+                        '+='+$body_width/2
                 }, {queue:false});
         }
     });
@@ -149,12 +147,16 @@ $(function() {
     });
 
     $(document).mousemove(function(e) {
-        var distance = $('body').height() - $thumbs_height;
+        var distance = $body.height() - $thumbs_height;
         if (e.pageY > distance){
-            $('.small').slideDown();
+            $small.slideDown();
         }else{
-            $('.small').slideUp();
+            $small.slideUp();
         }
+    });
+
+    $small.mouseenter(function() {
+        centerCurrent($('.active'))
     });
 
     $(window).resize(function() {
@@ -162,63 +164,59 @@ $(function() {
     });
 
     function imgSize(img) {
-        if($('body').height() <= img.find('img').height()){
-            img.height( $('body').height());
+        if($body.height() <= img.find('img').height()){
+            img.height( $body.height());
         }
-        if ($('body').height() > img.find('img').height()){
+        if ($body.height() > img.find('img').height()){
             img.height('auto');
         }
-        if ($('body').width() > img.find('img').width()){
+        if ($body.width() > img.find('img').width()){
             img.width('auto');
         }
-        if ($('body').width() <= img.find('img').width()){
-            img.width( $('body').width());
+        if ($body.width() <= img.find('img').width()){
+            img.width( $body.width());
         }
     }
 
     function prevImg(elem_num) {
-        $('.prev_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">');
-        $('.prev_img img').promise().done(slideRight());
+        $('.prev_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
+                      .find('img').promise().done(slideRight());
         history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
         checkLastElem(elem_num);
     }
 
     function nextImg(elem_num) {
-        $('.next_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">');
-        $('.next_img img').promise().done(slideLeft());
+        $('.next_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
+                      .find('img').promise().done(slideLeft());
         history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
         checkLastElem(elem_num);
     }
 
     function checkLastElem(elem_num) {
         if(elem_num == getKeysCount($(images).data())){
-            $('a.next').css({visibility:'hidden'});
+            $next_arr.css({visibility:'hidden'});
             loadRestImg();
         }else if(elem_num == 1){
-            $('a.prev').css({visibility:'hidden'});
+            $prev_arr.css({visibility:'hidden'});
         }else{
             $('a.prev, a.next').css({visibility:'visible'});
         }
     }
 
     function loadRestImg() {
-        console.log('3 '+getKeysCount($(images).data()));
-
         var link_photo = alb_photo.substring(0, alb_photo.indexOf('?'));
 
-
         $.get(link_photo+'updated;'+last_loaded_img+'/?format=json', {}, function (data) {
-
             var i = getKeysCount($(images).data());
-//            console.log(i);
-            jQuery.each(data['entries'].slice(1, data['entries'].length-1), function () {
+            console.log(data);
+            jQuery.each(data['entries'].slice(0, data['entries'].length-1), function () {
                 i++;
-//                console.log(i);
-//                console.log(this['img']['XXS']['href']);
                 $(images).data(''+i, { XXS: this['img']['XXS']['href'], L: this['img']['L']['href']});
                 var path = this['img']['XXS']['href'];
-                $('.small').append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
+                $small.append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
             });
+            console.log(data['entries'].length);
+            if (data['entries'].length > 1) $next_arr.css({visibility:'visible'});
             var last_loaded = data['entries'].length-1;
             return last_loaded_img = data['entries'][last_loaded]['updated'];
         }, 'jsonp');
@@ -270,21 +268,25 @@ $(function() {
     function changeCurrentThumb(current) {
         $('.small img').removeClass('active');
         $(current).addClass('active');
+        centerCurrent(current);
+    }
 
-        if($(current).offset().left > ($('body').width()/2)){
-            $('.small').animate({
-                left: parseInt($('.small').css('left'), 10) <= ($('body').width()+$('body').width()/2) - $('.small').width() ?
-                    $('body').width() - $('.small').width() :
-                    '-='+($(current).offset().left - $('body').width()/2 +$(current).width())
+    function centerCurrent(current) {
+        var $body_width = $body.width(),
+            $small_width = $small.width(),
+            $curr_offset = $(current).offset().left;
+        if($curr_offset > ($body_width/2)){
+            $small.animate({
+                left: parseInt($small.css('left'), 10) <= ($body_width+$body_width/2) - $small_width ?
+                    $body_width - $small_width :
+                    '-='+($curr_offset - $body_width/2 +$(current).width())
             }, {queue:false});
-
         }else{
-            $('.small').animate({
-                left: parseInt($('.small').css('left'), 10) >= -$('body').width()/2 ?
+            $small.animate({
+                left: parseInt($small.css('left'), 10) >= -$body_width/2 ?
                     0 :
-                    '+='+($('body').width()/2 - $(current).offset().left-$(current).width())
+                    '+='+($body_width/2 - $curr_offset-$(current).width())
             }, {queue:false});
-
         }
     }
 
