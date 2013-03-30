@@ -15,18 +15,21 @@ $(function() {
 
 
     dfd
+        //используя Яндкс.Фотки API отправляем запрос на коллекции пользователя "aig1001"
         .then(function () {
             return $.get("http://api-fotki.yandex.ru/api/users/aig1001/?format=json", {}, function (data) {
                 alb_photo = data['collections']['album-list']['href'];
             }, 'jsonp');
 
         })
+        //запрос на коллекции альбомов
         .pipe(function () {
             return $.get(alb_photo + "/?format=json", {}, function (data) {
                 alb_photo = data['links']['self'];
             }, 'jsonp');
 
         })
+        //запрос на коллекцию картинок альбома 'Кошкин дом'
         .pipe(function () {
             return $.get(alb_photo, {}, function (data) {
                 var a;
@@ -37,6 +40,9 @@ $(function() {
             }, 'jsonp');
 
         })
+
+        //запрос на фотографии альбома, записываем в значение свойств объекта ссылки на картинки
+
         .pipe(function () {
             return $.get(alb_photo, {}, function (data) {
                 jQuery.each(data['entries'].slice(0, data['entries'].length-1), function (i) {
@@ -44,9 +50,12 @@ $(function() {
                     $(images).data(''+i, { XXS: this['img']['XXS']['href'], L: this['img']['L']['href']});
                 });
 
+            //записываем дату обновления последней загруженной картинки, чтобы с нее начать подгрузку остальных
                 var last_loaded = data['entries'].length-1;
                 last_loaded_img = data['entries'][last_loaded]['updated'];
             }, 'jsonp');
+
+        //заполняем панель превью фотографий
 
         }).pipe(function () {
              jQuery.each($(images).data(), function (i) {
@@ -54,6 +63,7 @@ $(function() {
                 $small.append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
             });
 
+        //показываем последнюю активную фотографию с помощью history API
             var first_img,img_num;
             if (history.state){
                 first_img = history.state.img;
@@ -72,10 +82,11 @@ $(function() {
 
     $small.hide();
 
+    //при клике на превью листаем фото в право или в лево, в зависимости от положения предыдущей фотографии
     $small.on('click', 'a', function (event) {
         event.preventDefault();
-        var this_img = $(this).find('img');
-        var img_num = $(this_img).attr("alt"),
+        var this_img = $(this).find('img'),
+            img_num = $(this_img).attr("alt"),
             old_num = $('.current_img img').attr("alt");
 
         changeCurrentThumb($(this_img));
@@ -87,6 +98,7 @@ $(function() {
         }
     });
 
+    //отображение предыдущей фотографии
     $prev_arr.on('click', function (event) {
         event.preventDefault();
 
@@ -99,7 +111,7 @@ $(function() {
         prevImg(prev_num);
     });
 
-
+    //отображение следующей фотографии
     $next_arr.on('click', function (event) {
         event.preventDefault();
 
@@ -112,7 +124,7 @@ $(function() {
         nextImg(next_num);
     });
 
-
+    //если колесо мышки скролится вверх, то двигаем панель превью влево, если скролл вниз, то двигаем вправо
     $small.bind('mousewheel DOMMouseScroll', function(e) {
         var scrollTo = null;
         if (e.type == 'mousewheel') {
@@ -139,6 +151,7 @@ $(function() {
         }
     });
 
+    //показываем, скрываем стрелки(справа, слева)
     $(document).mouseenter(function() {
         $('.wrapp > a').show();
     });
@@ -146,6 +159,7 @@ $(function() {
         $('.wrapp > a').hide();
     });
 
+    //показываем, скрываем панель превью при приблежении курсора к области панели
     $(document).mousemove(function(e) {
         var distance = $body.height() - $thumbs_height;
         if (e.pageY > distance){
@@ -155,14 +169,17 @@ $(function() {
         }
     });
 
+    //центрируем активное изображение при наведении на панель превью
     $small.mouseenter(function() {
         centerCurrent($('.active'))
     });
 
+    //масштабируем картинку при изменении размера окна
     $(window).resize(function() {
         imgSize($(".current_img"));
     });
 
+    //маштабирование картинки
     function imgSize(img) {
         if($body.height() <= img.find('img').height()){
             img.height( $body.height());
@@ -178,6 +195,7 @@ $(function() {
         }
     }
 
+    //отображаем предыдущую картинку, сохраняем ее с помощью history api
     function prevImg(elem_num) {
         $('.prev_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
                       .find('img').promise().done(slideRight());
@@ -185,6 +203,7 @@ $(function() {
         checkLastElem(elem_num);
     }
 
+    //отображаем следующую картинку, сохраняем ее с помощью history api
     function nextImg(elem_num) {
         $('.next_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
                       .find('img').promise().done(slideLeft());
@@ -192,6 +211,7 @@ $(function() {
         checkLastElem(elem_num);
     }
 
+    //проверка - является ли картинка последней или первой
     function checkLastElem(elem_num) {
         if(elem_num == getKeysCount($(images).data())){
             $next_arr.css({visibility:'hidden'});
@@ -203,25 +223,30 @@ $(function() {
         }
     }
 
+    //подгрузка следующих картинок из текущего альбома, начиная с последней загруженной
     function loadRestImg() {
         var link_photo = alb_photo.substring(0, alb_photo.indexOf('?'));
 
         $.get(link_photo+'updated;'+last_loaded_img+'/?format=json', {}, function (data) {
             var i = getKeysCount($(images).data());
-            console.log(data);
+
             jQuery.each(data['entries'].slice(0, data['entries'].length-1), function () {
                 i++;
                 $(images).data(''+i, { XXS: this['img']['XXS']['href'], L: this['img']['L']['href']});
                 var path = this['img']['XXS']['href'];
                 $small.append('<a href="/"><img src="'+ path +'" alt="' + i +'" height="75" width="75"></a>');
             });
-            console.log(data['entries'].length);
+
+            //отобразить стрелки если элемент не последний
             if (data['entries'].length > 1) $next_arr.css({visibility:'visible'});
+
+            //записываем дату обновления последней загруженной картинки
             var last_loaded = data['entries'].length-1;
             return last_loaded_img = data['entries'][last_loaded]['updated'];
         }, 'jsonp');
     }
 
+    //подсчет количества свойств в объекте
     function getKeysCount(obj) {
         var counter = 0;
         for (var key in obj) {
@@ -230,7 +255,7 @@ $(function() {
         return counter;
     }
 
-
+    //анимация смены картики влево
     function slideLeft() {
 
         $('.current_img').animate({
@@ -248,6 +273,7 @@ $(function() {
         imgSize($('.current_img'));
     }
 
+    //анимация смены картинки вправо
     function slideRight() {
         $('.current_img').animate({
             left: $('.current_img').outerWidth()*2
@@ -264,13 +290,14 @@ $(function() {
         imgSize($('.current_img'));
     }
 
-
+    //добавление класса 'active' текущей превью
     function changeCurrentThumb(current) {
         $('.small img').removeClass('active');
         $(current).addClass('active');
         centerCurrent(current);
     }
 
+    //центрирование текущей превью
     function centerCurrent(current) {
         var $body_width = $body.width(),
             $small_width = $small.width(),
