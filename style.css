@@ -59,11 +59,6 @@ body
     text-align: center;
 }
 
-.small
-{
-
-}
-
 img
 {
     background: transparent;
@@ -71,7 +66,6 @@ img
 
 .wrapp
 {
-    /*display: inline-block;*/
     position: relative;
     overflow: hidden;
     height: 100%;
@@ -104,18 +98,18 @@ img
     float: left;
 }
 
-.main .current_img
+.main__current
 {
     position: relative;
 }
 
-.main .next_img
+.main__next
 {
     position: relative;
     right: -2000px;
 }
 
-.main .prev_img
+.main__prev
 {
     position: relative;
     left: -2000px;
@@ -145,14 +139,14 @@ img
     padding: 5px;
 }
 
-.small .active
+.small--active
 {
     border: 3px solid #50BCE0;
     padding: 2px;
     box-shadow: 0 0 1px 1px rgba(80, 188, 224, 0.8);
 }
 
-.prev
+.arrow-prev
 {
     background: url("arrow.png") no-repeat scroll 0 0 transparent;
     height: 70px;
@@ -162,7 +156,7 @@ img
     width: 40px;
 }
 
-.next
+.arrow-next
 {
     background: url("arrow.png") no-repeat scroll -40px 0 transparent;
     height: 70px;

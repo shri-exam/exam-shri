@@ -8,8 +8,8 @@ $(function() {
         $thumbs_height  = 90,
         $body = $('body'),
         $small = $('.small'),
-        $prev_arr = $('a.prev'),
-        $next_arr = $('a.next');
+        $prev_arr = $('.arrow-prev'),
+        $next_arr = $('.arrow-next');
 
     dfd.resolve();
 
@@ -75,7 +75,7 @@ $(function() {
 
             checkLastElem(img_num);
             changeCurrentThumb($('.small img[alt="'+ img_num +'"]'));
-            return $('.current_img').html('<img src="'+ first_img +'" alt="'+ img_num +'">');
+            return $('.main__current').html('<img src="'+ first_img +'" alt="'+ img_num +'">');
         });
 
 
@@ -87,7 +87,7 @@ $(function() {
         event.preventDefault();
         var this_img = $(this).find('img'),
             img_num = $(this_img).attr("alt"),
-            old_num = $('.current_img img').attr("alt");
+            old_num = $('.main__current img').attr("alt");
 
         changeCurrentThumb($(this_img));
 
@@ -102,7 +102,7 @@ $(function() {
     $prev_arr.on('click', function (event) {
         event.preventDefault();
 
-        var curr_img = $('.current_img').find('img').attr("alt"),
+        var curr_img = $('.main__current').find('img').attr("alt"),
             prev_num = parseInt(curr_img, 10) - 1 + '',
             prev_thumb = $small.find('img[alt="'+prev_num+'"]');
 
@@ -115,7 +115,7 @@ $(function() {
     $next_arr.on('click', function (event) {
         event.preventDefault();
 
-        var curr_img = $('.current_img').find('img').attr("alt"),
+        var curr_img = $('.main__current').find('img').attr("alt"),
             next_num = parseInt(curr_img, 10) + 1 + '',
             next_thumb = $small.find('img[alt="'+next_num+'"]');
 
@@ -171,12 +171,12 @@ $(function() {
 
     //центрируем активное изображение при наведении на панель превью
     $small.mouseenter(function() {
-        centerCurrent($('.active'))
+        centerCurrent($('.small--active'))
     });
 
     //масштабируем картинку при изменении размера окна
     $(window).resize(function() {
-        imgSize($(".current_img"));
+        imgSize($(".main__current"));
     });
 
     //маштабирование картинки
@@ -197,7 +197,7 @@ $(function() {
 
     //отображаем предыдущую картинку, сохраняем ее с помощью history api
     function prevImg(elem_num) {
-        $('.prev_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
+        $('.main__prev').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
                       .find('img').promise().done(slideRight());
         history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
         checkLastElem(elem_num);
@@ -205,7 +205,7 @@ $(function() {
 
     //отображаем следующую картинку, сохраняем ее с помощью history api
     function nextImg(elem_num) {
-        $('.next_img').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
+        $('.main__next').html('<img src="'+ $(images).data(elem_num).L +'" alt="'+ elem_num +'">')
                       .find('img').promise().done(slideLeft());
         history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
         checkLastElem(elem_num);
@@ -219,7 +219,7 @@ $(function() {
         }else if(elem_num == 1){
             $prev_arr.css({visibility:'hidden'});
         }else{
-            $('a.prev, a.next').css({visibility:'visible'});
+            $('.arrow-prev, .arrow-next').css({visibility:'visible'});
         }
     }
 
@@ -258,42 +258,42 @@ $(function() {
     //анимация смены картики влево
     function slideLeft() {
 
-        $('.current_img').animate({
-            left: -($('.current_img').outerWidth()*2)
+        $('.main__current').animate({
+            left: -($('.main__current').outerWidth()*2)
         }, {
             "complete" : function() {
                 $(this).remove();
             }
             });
-        $('.next_img').animate({
+        $('.main__next').animate({
             right: 0
         });
-        $('.next_img').removeClass().addClass('current_img');
-        $('.main ul').append('<li class="next_img"></li>');
-        imgSize($('.current_img'));
+        $('.main__next').removeClass().addClass('main__current');
+        $('.main ul').append('<li class="main__next"></li>');
+        imgSize($('.main__current'));
     }
 
     //анимация смены картинки вправо
     function slideRight() {
-        $('.current_img').animate({
-            left: $('.current_img').outerWidth()*2
+        $('.main__current').animate({
+            left: $('.main__current').outerWidth()*2
         }, {
             "complete" : function() {
                 $(this).remove();
             }
         });
-        $('.prev_img').animate({
+        $('.main__prev').animate({
             left: 0
         });
-        $('.prev_img').removeClass().addClass('current_img');
-        $('.main ul').append('<li class="prev_img"></li>');
-        imgSize($('.current_img'));
+        $('.main__prev').removeClass().addClass('main__current');
+        $('.main ul').append('<li class="main__prev"></li>');
+        imgSize($('.main__current'));
     }
 
-    //добавление класса 'active' текущей превью
+    //добавление класса 'small--active' текущей превью
     function changeCurrentThumb(current) {
-        $('.small img').removeClass('active');
-        $(current).addClass('active');
+        $('.small img').removeClass('small--active');
+        $(current).addClass('small--active');
         centerCurrent(current);
     }
 
