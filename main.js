@@ -89,7 +89,15 @@ $(function() {
         $('.main__prev').html('<img src="' + $(images).data(elem_num).L + '" alt="' + elem_num + '">')
                       .find('img').promise().done(slideRight());
 
-        history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
+        var image = $(images).data(elem_num).L;
+        if (history.pushState) {
+            history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
+        } else {
+            console.log('else2');
+            localStorage.setItem('img_url', image);
+            localStorage.setItem('img_num', elem_num);
+            console.log(localStorage);
+        }
         checkLastElem(elem_num);
     }
 
@@ -98,7 +106,15 @@ $(function() {
         $('.main__next').html('<img src="' + $(images).data(elem_num).L + '" alt="' + elem_num + '">')
                       .find('img').promise().done(slideLeft());
 
-        history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
+        var image = $(images).data(elem_num).L;
+        if (history.pushState) {
+            history.pushState({img: $(images).data(elem_num).L, img_num: elem_num}, '', '');
+        } else {
+            console.log('else1');
+            localStorage.setItem('img_url', image);
+            localStorage.setItem('img_num', elem_num);
+            console.log(localStorage);
+        }
         checkLastElem(elem_num);
     }
 
@@ -194,16 +210,23 @@ $(function() {
         }).pipe(function () { $.each($(images).data(), function (i) { var path = this.XXS; $small.append('<a href="/"><img src="' + path + '" alt="' + i + '" height="75" width="75"></a>');
             });
 
-            //показываем последнюю активную фотографию с помощью history API
+            //показываем последнюю активную фотографию с помощью history API, либо localStorage
             var first_img, img_num;
 
-            if (history.state) {
+            if (history.state !== null && history.pushState) {
+                console.log('1');
                 first_img = history.state.img;
                 img_num = history.state.img_num;
+            } else if (!history.pushState && localStorage.length > 0) {
+                console.log('2');
+                first_img = localStorage['img_url'];
+                img_num = localStorage['img_num'];
             } else {
+                console.log('3');
                 first_img = $(images).data('1').L;
                 img_num = 1;
             }
+            console.log(localStorage.length);
 
             checkLastElem(img_num);
             changeCurrentThumb($('.small img[alt="' + img_num + '"]'));
